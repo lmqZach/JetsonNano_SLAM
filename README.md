@@ -31,10 +31,15 @@ mance.
 ## Detailed Tasks
 1. Setup an environment in a 10ft × 10ft area with landmarks as exemplified in the figure. The landmarks are 9 AprilTags in two types (Tag1 & Tag2) to represent natural objects. 
 <img width="316" alt="Screen Shot 2022-05-09 at 14 51 46" src="https://user-images.githubusercontent.com/92130976/167477552-d68e017e-2707-4283-8045-880b50daf88b.png">
+
 2. Implement the KALMAN filter based SLAM system. Use the off-the-shelf software to detect the landmarks.
+
 3. Drive through the environment to build up a map in two steps:
+
     i) Initially drive the robot in a circle
+    
     ii) Drive through the environment using a figure 8 trajectory.
+    
 5. Compare the difference between the two generated maps.
 
 ## Report
