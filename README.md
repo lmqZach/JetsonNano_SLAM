@@ -38,7 +38,8 @@ Tag2 |                | Tag2 ---
 						                 1m
 Tag1 |                | Tag1 ---
        ___   ___   ___
-      Tag2   Tag1   Tag2
+      Tag2   Tag1   Tag2<img width="336" alt="Screen Shot 2022-05-09 at 14 51 03" src="https://user-images.githubusercontent.com/92130976/167477441-8fd7ed6d-3e03-421d-b0ab-461055eafd67.png">
+
      |<-------3m------>|
 
 2. Implement the KALMAN filter based SLAM system. Use the off-the-shelf software to detect the landmarks.
