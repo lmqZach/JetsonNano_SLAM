@@ -30,18 +30,7 @@ mance.
 
 ## Detailed Tasks
 1. Setup an environment in a 10ft × 10ft area with landmarks as exemplified in the figure. The landmarks are 9 AprilTags in two types (Tag1 & Tag2) to represent natural objects. 
-      Tag2   Tag1   Tag2
-       ___   ___   ___
-Tag1 |                | Tag1
-	 
-Tag2 |                | Tag2 ---
-						                 1m
-Tag1 |                | Tag1 ---
-       ___   ___   ___
-      Tag2   Tag1   Tag2<img width="336" alt="Screen Shot 2022-05-09 at 14 51 03" src="https://user-images.githubusercontent.com/92130976/167477441-8fd7ed6d-3e03-421d-b0ab-461055eafd67.png">
-
-     |<-------3m------>|
-
+    <img width="316" alt="Screen Shot 2022-05-09 at 14 51 46" src="https://user-images.githubusercontent.com/92130976/167477552-d68e017e-2707-4283-8045-880b50daf88b.png">
 2. Implement the KALMAN filter based SLAM system. Use the off-the-shelf software to detect the landmarks.
 3. Drive through the environment to build up a map in two steps:
     i) Initially drive the robot in a circle
@@ -50,25 +39,36 @@ Tag1 |                | Tag1 ---
 
 ## Report
 ### Logistic: 
-As the consecutive project from the first one, the main goal is to use the onboard camera to provide instantaneous feedback to correct the Jetbot trajectory on the ground plane, to reach target points with more accuracy. One necessary step before implementation is to calibrate the onboard camera to allow effective tag localization. Theoretically, the pose information should be the absolute robot pose in the world frame, but for tracking waypoints in this project, a relative pose with respect to April tags would be sufficient, and it is used to correct the path and plan for the next tag.
-### Control Algorithm:
-It takes minimal effort to complete ROS camera calibration, but our group did physically flip the camera view angle for easier computation. For the best quality of tag detection, tags are placed 0.5m from the target waypoint, on the direction of travel. Our group divided the main design logic into three parts: calculating the tag’s relative position to camera, completing a path to a specific tag with correction, and finding the next tag through rotating the Jetbot.
-### Code Explanation:
-Regarding ROS node setup and message transfer in matrix computation, the localization node receives ID lists of recognized April-tags and their corresponding transformation matrices. It then publishes the robot pose information to the planner node, computed as p_camera=T_tag^camera·p_tag. Since we are moving in 2D plane, we would ignore errors in the z-axis. Taking the origin of tags, we set p_tag=[0,0,0,1]^T, which essentially just makes the tag position in the camera frame identical to the translation vector in T_tag^camera. Finally, our localization node publishes a list with 3 values: a relative x position, a relative y position, and a tag ID. If no tag is detected, those 3 values will be [0, 0, -1]. 
-To complete path correction, our group splits the speed of wheels into two parts: an offset turning speed called ‘diff’ proportional to ‘relative_x’ with opposite signs on each wheel, and a ‘forward’ speed proportional to ‘relative_y’. To avoid going too fast to miss the tag in the video footage, forward speed is confined under 0.4. 
-The value of variable ‘relative_y’ also determines if the current waypoint is reached, since all tags are placed 0.5m from the waypoint. For locating the next tag, the code is developed to keep Jetbot rotating until the next tag is detected. Due to the lag between video and Jetbot movement, constant rotation does not guarantee a successful detection of the next tag in actual tests. As a result, discrete rotation is involved, controlled by a Boolean variable ‘turn_flag’, to allow relatively stationary phases for tag detection.
-Performance:
-Initially, the above code generates satisfying results at 70% - 80% chance. Failures happen in two scenarios. Our group assigned ‘forward’ speed to be linear to ‘relative_y’ to complete the movement more efficiently. However, when ‘relative_y’ is too large, the correction speed is so fast that the robot would move completely out of the camera range which can detect the current tag, which leads to a messy trajectory in the end. The other problem happens, after reaching a specific tag, that the wheel speed is too low to rotate the robot on the test surface, which would cause the robot to stay in one place in front of the previous tag.
-The mentioned problems are solved by capping the forward speed to V=0.4, along with changing two-wheel differential rotation to one-wheel counterclockwise rotation at v=0.2. The engineered adjustment guarantees every successful test for the last four runs, during which, the robot will arrive at the waypoints with correct facing and return to the origin with very little deviation as shown in the example video.
-### Limitations:
-Most limitations in this project are brought by April tags. For instance, there is no absolute guarantee that the next detected tag is the actual ‘next’ one, if the camera somehow skips the second tag and jumps to the third one. The other limitation is hidden in the environment setup. Since each tag is attached to a booklet and humanly placed on the ground, the distance to waypoint, degree of facing, and flatness of the tag surface have a great variation to the industrial standard. Theoretically, when moving to the target tag, the Jetbot may detect other tags at the very edge of video footage, which could cause incorrect trajectory. 
-The other drawback is the energy consumption in completing the movement. Our algorithm satisfies the trajectory requirement but requires discrete motion in turning, which uses a lot of power to complete. 
-### Potential Improvements:
-The limitations in tag detection are theoretically possible, but our group did not encounter related problems in real tests. Our idea of solving them is by a sorted queue of tag_IDs. It will make sure the Jetbot’s ability to detect the correct number of tags in an engineered sequence. This solution can be easily implemented, if necessary, in our future projects.
-Potential improvement can be made through hardware updates to achieve better energy utilization. A better camera will lead to higher frame rate of the video, and a more advanced motor structure will lead to a slower but more controllable turning speed. Both hardware changes will lead to the possibility of consistent motion, which is more power-efficient.
+After achieving simple localization from the last assignment, this project focuses on constructing, updating the map of the test environment while recording Jetbot’s location by implementing Extended Kalman Filter (EKF). To apply EKF to our SLAM in the setup, we have divided the design logic into 5 parts: state prediction, measurement prediction, measurement, data association, and tag update.
+### CEKF Algorithm:
+<img width="262" alt="image" src="https://user-images.githubusercontent.com/92130976/167477836-50bdde99-9225-4d63-bba1-3fd4368747bd.png">
+### Implementation:
+#### State Prediction: 
+<img width="622" alt="Screen Shot 2022-05-09 at 14 54 02" src="https://user-images.githubusercontent.com/92130976/167478127-2187c815-c6d5-48fc-aff4-97e86b38fce5.png">
+#### Covariance prediction: 
+<img width="746" alt="Screen Shot 2022-05-09 at 14 56 14" src="https://user-images.githubusercontent.com/92130976/167478463-ce7aa90f-f3b2-4a44-92e6-8ce685b4640a.png">
+#### Kalman Gain:
+<img width="783" alt="Screen Shot 2022-05-09 at 14 56 55" src="https://user-images.githubusercontent.com/92130976/167478583-340eec10-472a-43d8-9c4a-5cec52670584.png">
+#### Data Association:
+For every tag observed in a frame, we need to determine whether it is a new tag or not. If it is not a new tag, we also need to determine which tag it is associated with. We solved the problem by comparing the tag with all ‘seen’ tags in our estimated state vector. Specifically, for every tag in a frame, we computed its Euclidean distance in world coordinate to all seen tags in the same tag category (there are 2 tag categories in our setup). Then, we assigned the observation as a seen tag if the distance is less than a threshold. If no seen tags satisfied the condition, the algorithm would create a new tag and add the observation to our state vector. If the state vector is full, we then assign an observation to the tag with a minimum distance.
+#### State and covariance updates is achieved by applying the Gain K into:
+<img width="175" alt="image" src="https://user-images.githubusercontent.com/92130976/167478715-60de2367-7a95-4b84-ae6d-e0db2eb14845.png">
 
-## Performance Video Link:
-Complete Run: https://youtu.be/YYee9Y_hJ8U 
+## Performance:
+As what the purpose of Extended Kalman Filter should serve, the generated map plots after a few runs are better than the initial ones under circular motion, which verifies our implementation of the EKF to be effective. Tags are distinguished successfully in the sequence of blue and green which stands for ‘0’ and ‘42’ in our actual setup. Plot 1 can be interpreted as directly recognized tag positions due to the lack of EKF interference when there is only one circular motion. However, after two more circles, the EKF kicks in and corrects the tag positions more accurately to the actual environment. In addition, the X-Y coordinate of each tag is physically compared to the actual setup to make sure there is no significant difference. However, plot 3 under motion ‘8’ is less accurate than plot 1 and plot 2. Two tags in the same tag category are even detected which proofs the failure of the correction step. Plus, most tag positions are more away from the actual setup. In our general assumption, more complicated motion models does not suffice the Jetbot structure and the implementation of EKF.
+## Limitations:
+The main constraint of this project is the accuracy of Jetbot’s motion model. Due to the simplicity of the robot motor and control magnetism, the motion model became the biggest barrier to better results. Proven in prior projects, the Jetbot has so much uncontrollable and unpredictable flexibility when completing specific motion commands. It leads to the discrepancy between our established motion model and the actual physical motion. Although efforts are made in noise calibration to make the trajectory as close as a circle, there are still a lot of inaccuracies. For example, we noticed the shift of the circle center during a continuous run, even after our best attempts to calibrate. Plus, there are other unnoticeable inaccuracies of the motion, which, altogether, causes noticeable difference from the predicted robot position. 
+Under a more complicated motion, like number ‘8’, the discrepancy is even amplified and results in worse tag plots.
+## Potential Improvements:
+Other than using a more naturally ‘accurate’ robot, there are some potential adjustments that may help reduce the error. For instance, we could move the environment setup from carpet in the graduate common room to a smooth tiled floor. From our prior experience, surfaces with less friction tend to allow Jetbot motion to be closer to the command. However, this option is eliminated due to the size of the environment required for this setup.
+During calibration, we could use a marker pen attached to the robot during a run to physically ‘draw’ the trajectory. With the marker on the ground, we would have a better clue in predicting the error, and, as a result, change the noise matrix to achieve better results.
+## Generated Maps:
+ <img width="400" alt="image" src="https://user-images.githubusercontent.com/92130976/167478946-fe96bf5b-6c1a-4d7f-9110-cbc9a376e82b.png">
+Figure 1: Map plot of circular motion, 1 round
+<img width="413" alt="image" src="https://user-images.githubusercontent.com/92130976/167478995-e90a1186-a983-4076-a3d9-448499da7c12.png">
+Figure 2: Map plot of circular motion, 3 rounds
+<img width="410" alt="image" src="https://user-images.githubusercontent.com/92130976/167479012-2c74a7a6-82d9-43c3-bf99-8966e005fdc2.png">
+Figure 3: Map plot of number ‘8’ motion, 3 rounds
 
 
 
