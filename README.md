@@ -28,7 +28,7 @@ The new algorithm for this progress file resides under root/navigation_dev/src
 ```
 
 ## Objective
-The objective of homework 3 is to implement a version of the Simulta- neous Localization and Mapping (SLAM) technique and evaluate its perfor-
+The objective of this phase of project is to implement a version of the Simulta- neous Localization and Mapping (SLAM) technique and evaluate its perfor-
 mance.
 
 ## Detailed Tasks
