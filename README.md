@@ -19,8 +19,10 @@ The new algorithm for this progress file resides under root/navigation_dev/src
   |   |-- msg
   |   |-- src
   |          |-- april_detect.py
-  |          |-- localizatiojn_node.py
+  |          |-- ekf.py
+  |          |-- localization_node.py
   |          |-- planner_node.py
+  |          |-- slam_node.py
   |-- ros_deep_learning
       |-- ```
 ```
